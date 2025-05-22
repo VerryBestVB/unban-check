@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Проверка статуса разбана</title>
+  <style>
+    body { font-family: Arial, sans-serif; background: #f4f4f4; padding: 2rem; }
+    .container { max-width: 500px; margin: auto; background: white; padding: 2rem; border-radius: 10px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
+    label { display: block; margin-top: 1rem; font-weight: bold; }
+    input, textarea { width: 100%; padding: 0.5rem; margin-top: 0.3rem; border: 1px solid #ccc; border-radius: 5px; }
+    button { margin-top: 1.5rem; padding: 0.7rem 1rem; background: #4CAF50; color: white; border: none; border-radius: 5px; cursor: pointer; }
+    button:hover { background: #45a049; }
+    #result { margin-top: 1.5rem; font-size: 1.2rem; font-weight: bold; }
+    .admin-section { margin-top: 3rem; border-top: 1px solid #ddd; padding-top: 2rem; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>Проверка статуса разбана</h2>
+    <label for="nickname">Ник игрока</label>
+    <input type="text" id="nickname" placeholder="Введите ник...">
+    <button onclick="checkStatus()">Проверить</button>
+    <div id="result"></div>
+  </div>
+
+  <script>
+    let players = {};
+
+    async function loadData() {
+      try {
+        const response = await fetch('data.json');
+        players = await response.json();
+      } catch (e) {
+        console.error("Ошибка загрузки JSON:", e);
+      }
+    }
+
+    async function checkStatus() {
+      if (Object.keys(players).length === 0) await loadData();
+
+      const nickname = document.getElementById("nickname").value.trim();
+      const resultDiv = document.getElementById("result");
+      const entry = players[nickname];
+      const now = new Date();
+      let output = "";
+
+      if (!entry) {
+        output = "Игрок не найден или чистый.";
+      } else {
+        const status = entry.status;
+        const unbanDate = new Date(entry.unban_at);
+        const timeDiff = unbanDate - now;
+
+        if (timeDiff <= 0) {
+          const passedSinceUnban = (now - unbanDate) / 1000 / 60 / 60 / 24;
+          if (passedSinceUnban >= 3) {
+            output = `${nickname}: Чисто, нет приостановки.`;
+          } else {
+            output = `${nickname}: ${status}, разбан уже был.`;
+          }
+        } else {
+          const totalHours = Math.floor(timeDiff / 1000 / 60 / 60);
+          const days = Math.floor(totalHours / 24);
+          const hours = totalHours % 24;
+          output = `${nickname}: ${status}, до разбана: ${days} дн. ${hours} ч.`;
+        }
+      }
+      resultDiv.innerText = output;
+    }
+  </script>
+</body>
+</html>
