@@ -2,169 +2,181 @@
 <html lang="ru">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Админ-панель | Апелляции</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Админ-панель | Бан-система</title>
   <style>
     body {
-      font-family: Arial, sans-serif;
-      background: #2f2f2f;
-      color: #fff;
+      margin: 0;
       padding: 2rem;
+      font-family: Arial, sans-serif;
+      background-color: #e0e0e0;
     }
-    .container {
+    .admin-container {
       max-width: 800px;
       margin: auto;
-      background: #3a3a3a;
+      background: #fff;
       padding: 2rem;
       border-radius: 10px;
-      box-shadow: 0 0 15px rgba(0,0,0,0.5);
+      box-shadow: 0 0 15px rgba(0, 0, 0, 0.1);
     }
-    h2, h3 {
-      color: #f0f0f0;
+    h2 {
+      text-align: center;
     }
-    input, select, button, textarea {
-      font-family: monospace;
-      font-size: 1rem;
-      padding: 0.5rem;
-      margin-top: 0.3rem;
-      border-radius: 5px;
-      border: none;
-    }
-    input[type="password"] {
+    label, select, input, button {
+      display: block;
       width: 100%;
+      margin-bottom: 1rem;
+    }
+    input, select {
+      padding: 0.5rem;
+      font-size: 1rem;
+      border-radius: 5px;
+      border: 1px solid #ccc;
     }
     button {
+      padding: 0.7rem;
+      background-color: #1976d2;
+      color: white;
+      border: none;
+      border-radius: 5px;
       cursor: pointer;
-      margin: 0.3rem;
+      font-size: 1rem;
     }
-    .player-block {
-      margin-top: 1rem;
+    button:hover {
+      background-color: #1565c0;
+    }
+    .player-card {
+      background: #f7f7f7;
       padding: 1rem;
-      background: #444;
+      margin-bottom: 1rem;
       border-radius: 8px;
+      border-left: 5px solid #999;
     }
-    .status {
-      font-weight: bold;
+    .player-card[data-status="пермач"] {
+      border-left-color: darkred;
     }
-    .status-одобрено {
-      background-color: #2e7d32;
-      padding: 0.3rem 0.6rem;
-      border-radius: 5px;
+    .player-card[data-status="временно"] {
+      border-left-color: red;
     }
-    .status-отклонено {
-      background-color: #b71c1c;
-      padding: 0.3rem 0.6rem;
-      border-radius: 5px;
+    .player-card[data-status="рассмотрение"] {
+      border-left-color: orange;
     }
-    .status-на_рассмотрении {
-      background-color: #fbc02d;
-      color: black;
-      padding: 0.3rem 0.6rem;
-      border-radius: 5px;
+    .controls {
+      display: flex;
+      gap: 0.5rem;
+      flex-wrap: wrap;
     }
-    .status-пермач {
-      background-color: #880e4f;
-      padding: 0.3rem 0.6rem;
-      border-radius: 5px;
+    .controls button {
+      flex: 1 1 30%;
     }
-    #output {
-      white-space: pre-wrap;
-      background: #222;
-      padding: 1rem;
-      margin-top: 2rem;
-      border-radius: 8px;
+    .custom-duration {
+      display: none;
+      margin-top: -0.5rem;
     }
   </style>
 </head>
 <body>
-  <div class="container">
-    <h2>Админ-панель: управление апелляциями</h2>
-    <label for="adminPass">Пароль:</label>
+  <div class="admin-container">
+    <h2>Админ-панель</h2>
+    <label for="adminPass">Пароль администратора</label>
     <input type="password" id="adminPass" placeholder="Введите пароль" />
-    <button onclick="loadPanel()">Войти</button>
-
-    <div id="panel" style="display:none">
-      <div id="players"></div>
-      <button onclick="generateJSON()">Сгенерировать JSON</button>
-      <textarea id="output" rows="10" readonly></textarea>
+    <button onclick="login()">Войти</button>
+    <div id="adminArea" style="display:none;">
+      <h3>Список игроков</h3>
+      <div id="playersList"></div>
+      <div>
+        <h4>Команда:</h4>
+        <textarea id="outputCommand" rows="3" readonly></textarea>
+        <p><a href="https://github.com/ТВОЙ_ПРОЕКТ/data.json" target="_blank">Открыть файл для вставки команды</a></p>
+      </div>
     </div>
   </div>
 
   <script>
     const PASSWORD = "BVNt539greek7BV98";
+
     let players = {
-      "PlayerOne": { status: "на рассмотрении", unban_at: null },
-      "PlayerTwo": { status: "пермач", unban_at: null },
-      "PlayerThree": { status: "одобрено", unban_at: "2025-05-25T16:00:00Z" },
+      PlayerOne: { status: "пермач", unban_at: null },
+      PlayerTwo: { status: "рассмотрение", unban_at: null },
+      PlayerThree: { status: "временно", unban_at: "2025-06-01T12:00:00Z" }
     };
 
-    function loadPanel() {
+    function login() {
       const pass = document.getElementById("adminPass").value;
-      if (pass !== PASSWORD) return alert("Неверный пароль");
-      document.getElementById("panel").style.display = "block";
-      renderPlayers();
+      if (pass === PASSWORD) {
+        document.getElementById("adminArea").style.display = "block";
+        renderPlayers();
+      } else {
+        alert("Неверный пароль");
+      }
     }
 
     function renderPlayers() {
-      const container = document.getElementById("players");
-      container.innerHTML = "";
-      for (const [nick, data] of Object.entries(players)) {
-        const div = document.createElement("div");
-        div.className = "player-block";
-        div.innerHTML = `
-          <strong>${nick}</strong> — <span class="status status-${data.status.replaceAll(" ", "_")}">${data.status}</span><br>
-          <label>Изменить статус: </label>
-          <select onchange="updateStatus('${nick}', this.value)">
-            <option value="">Выбрать действие</option>
-            <option value="одобрено">Разбанить (одобрено)</option>
-            <option value="отклонено">Отклонить апелляцию</option>
-            <option value="пермач">Бессрочная блокировка</option>
-            <option value="custom">Временный бан (ввести)</option>
-            <option value="1">Бан на 1 день</option>
-            <option value="3">Бан на 3 дня</option>
-            <option value="7">Бан на 7 дней</option>
-            <option value="14">Бан на 14 дней</option>
-            <option value="30">Бан на 30 дней</option>
-          </select>
-          <div id="custom-${nick}" style="display:none">
-            <input type="number" placeholder="Дни" onchange="setCustomBan('${nick}', this.value)" />
+      const list = document.getElementById("playersList");
+      list.innerHTML = "";
+
+      Object.entries(players).forEach(([name, data]) => {
+        const card = document.createElement("div");
+        card.className = "player-card";
+        card.dataset.status = data.status;
+
+        const statusText =
+          data.status === "временно"
+            ? `Временно до ${new Date(data.unban_at).toLocaleString()}`
+            : data.status;
+
+        card.innerHTML = `
+          <strong>${name}</strong> — <em>${statusText}</em>
+          <div class="controls">
+            <button onclick="updateStatus('${name}', 'разбан')">Разбан</button>
+            <button onclick="updateStatus('${name}', 'отклонено')">Отклонить</button>
+            <button onclick="updateStatus('${name}', 'рассмотрение')">Оставить</button>
+            <select onchange="updateDuration('${name}', this)">
+              <option value="">Сменить срок</option>
+              <option value="1">1 день</option>
+              <option value="2">2 дня</option>
+              <option value="3">3 дня</option>
+              <option value="7">7 дней</option>
+              <option value="14">14 дней</option>
+              <option value="30">30 дней</option>
+              <option value="пермач">Бессрочная</option>
+              <option value="custom">Другое...</option>
+            </select>
+            <input type="text" class="custom-duration" placeholder="Введите срок в днях" onblur="applyCustomDuration('${name}', this)" />
           </div>
         `;
-        container.appendChild(div);
+
+        list.appendChild(card);
+      });
+    }
+
+    function updateStatus(name, status) {
+      let cmd = "";
+      if (status === "разбан") cmd = `ban-status ${name} appr`;
+      else if (status === "отклонено") cmd = `ban-status ${name} skip`;
+      else if (status === "рассмотрение") cmd = `ban-status ${name} skip`;
+      document.getElementById("outputCommand").value = cmd;
+    }
+
+    function updateDuration(name, select) {
+      const value = select.value;
+      if (value === "") return;
+      if (value === "пермач") {
+        document.getElementById("outputCommand").value = `ban-status ${name} pban`;
+      } else if (value === "custom") {
+        select.nextElementSibling.style.display = "block";
+        select.nextElementSibling.focus();
+      } else {
+        document.getElementById("outputCommand").value = `ban-status ${name} vban ${value}`;
       }
     }
 
-    function updateStatus(nick, value) {
-      if (value === "custom") {
-        document.getElementById(`custom-${nick}`).style.display = "block";
-        return;
+    function applyCustomDuration(name, input) {
+      const value = input.value;
+      if (!isNaN(value) && Number(value) > 0) {
+        document.getElementById("outputCommand").value = `ban-status ${name} vban ${value}`;
       }
-      document.getElementById(`custom-${nick}`).style.display = "none";
-      if (["одобрено", "отклонено", "пермач"].includes(value)) {
-        players[nick].status = value;
-        players[nick].unban_at = value === "одобрено" ? new Date().toISOString() : null;
-      } else if (!isNaN(parseInt(value))) {
-        const days = parseInt(value);
-        players[nick].status = "временный бан";
-        const unban = new Date();
-        unban.setDate(unban.getDate() + days);
-        players[nick].unban_at = unban.toISOString();
-      }
-      renderPlayers();
-    }
-
-    function setCustomBan(nick, days) {
-      if (!days || isNaN(days)) return;
-      const d = parseInt(days);
-      const date = new Date();
-      date.setDate(date.getDate() + d);
-      players[nick].status = "временный бан";
-      players[nick].unban_at = date.toISOString();
-      renderPlayers();
-    }
-
-    function generateJSON() {
-      document.getElementById("output").value = JSON.stringify(players, null, 2);
+      input.style.display = "none";
     }
   </script>
 </body>
