@@ -1,369 +1,171 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Админка Ban Status</title>
-<style>
-  body {
-    font-family: Arial, sans-serif;
-    background: #ddd; /* чуть темнее, серьезный фон */
-    padding: 2rem;
-  }
-  .container {
-    max-width: 900px;
-    margin: auto;
-    background: #fff;
-    padding: 2rem;
-    border-radius: 10px;
-    box-shadow: 0 0 14px rgba(0,0,0,0.2);
-  }
-  h2 {
-    margin-bottom: 1rem;
-  }
-  table {
-    width: 100%;
-    border-collapse: collapse;
-  }
-  th, td {
-    border: 1px solid #bbb;
-    padding: 8px;
-    text-align: center;
-  }
-  th {
-    background: #f0f0f0;
-  }
-  select, input[type="text"] {
-    padding: 4px;
-    font-size: 1rem;
-    width: 100%;
-    box-sizing: border-box;
-  }
-  button {
-    margin: 10px 5px 0 0;
-    padding: 0.5rem 1rem;
-    border: none;
-    border-radius: 5px;
-    cursor: pointer;
-    font-weight: bold;
-  }
-  .btn-approve {
-    background-color: #4caf50;
-    color: white;
-  }
-  .btn-deny {
-    background-color: #c62828;
-    color: white;
-  }
-  .btn-review {
-    background-color: #f57c00;
-    color: white;
-  }
-  .btn-save {
-    background-color: #2196f3;
-    color: white;
-    margin-top: 1rem;
-    width: 100%;
-  }
-  #commands {
-    margin-top: 2rem;
-    background: #eee;
-    padding: 1rem;
-    white-space: pre-wrap;
-    border-radius: 6px;
-    font-family: monospace;
-  }
-  #statusMessage {
-    margin-top: 1rem;
-    font-weight: bold;
-  }
-  #passwordSection {
-    margin-bottom: 1rem;
-  }
-  #passwordInput {
-    width: 300px;
-    padding: 6px;
-    font-size: 1rem;
-  }
-  #loginBtn {
-    padding: 6px 12px;
-    font-size: 1rem;
-    margin-left: 10px;
-    cursor: pointer;
-  }
-  #adminContent {
-    display: none;
-  }
-  /* Цвета для статусов в таблице */
-  .approved {
-    background: #c8e6c9;
-    color: #2e7d32;
-    font-weight: bold;
-  }
-  .review {
-    background: #fff3e0;
-    color: #f57c00;
-    font-weight: bold;
-    animation: pulse 2s infinite;
-  }
-  .denied {
-    background: #ffcdd2;
-    color: #c62828;
-    font-weight: bold;
-  }
-  .perm {
-    background: #ffbaba;
-    color: #7b0000;
-    font-weight: bold;
-  }
-  @keyframes pulse {
-    0%, 100% { box-shadow: 0 0 5px #f57c00; }
-    50% { box-shadow: 0 0 15px #f57c00; }
-  }
-</style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Админ-панель | Апелляции</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #2f2f2f;
+      color: #fff;
+      padding: 2rem;
+    }
+    .container {
+      max-width: 800px;
+      margin: auto;
+      background: #3a3a3a;
+      padding: 2rem;
+      border-radius: 10px;
+      box-shadow: 0 0 15px rgba(0,0,0,0.5);
+    }
+    h2, h3 {
+      color: #f0f0f0;
+    }
+    input, select, button, textarea {
+      font-family: monospace;
+      font-size: 1rem;
+      padding: 0.5rem;
+      margin-top: 0.3rem;
+      border-radius: 5px;
+      border: none;
+    }
+    input[type="password"] {
+      width: 100%;
+    }
+    button {
+      cursor: pointer;
+      margin: 0.3rem;
+    }
+    .player-block {
+      margin-top: 1rem;
+      padding: 1rem;
+      background: #444;
+      border-radius: 8px;
+    }
+    .status {
+      font-weight: bold;
+    }
+    .status-одобрено {
+      background-color: #2e7d32;
+      padding: 0.3rem 0.6rem;
+      border-radius: 5px;
+    }
+    .status-отклонено {
+      background-color: #b71c1c;
+      padding: 0.3rem 0.6rem;
+      border-radius: 5px;
+    }
+    .status-на_рассмотрении {
+      background-color: #fbc02d;
+      color: black;
+      padding: 0.3rem 0.6rem;
+      border-radius: 5px;
+    }
+    .status-пермач {
+      background-color: #880e4f;
+      padding: 0.3rem 0.6rem;
+      border-radius: 5px;
+    }
+    #output {
+      white-space: pre-wrap;
+      background: #222;
+      padding: 1rem;
+      margin-top: 2rem;
+      border-radius: 8px;
+    }
+  </style>
 </head>
 <body>
   <div class="container">
-    <h2>Админка Ban Status</h2>
-    <div id="passwordSection">
-      <input type="password" id="passwordInput" placeholder="Введите пароль администратора" />
-      <button id="loginBtn">Войти</button>
-      <div id="statusMessage"></div>
-    </div>
+    <h2>Админ-панель: управление апелляциями</h2>
+    <label for="adminPass">Пароль:</label>
+    <input type="password" id="adminPass" placeholder="Введите пароль" />
+    <button onclick="loadPanel()">Войти</button>
 
-    <div id="adminContent">
-      <table>
-        <thead>
-          <tr>
-            <th>Ник</th>
-            <th>Статус</th>
-            <th>Время разбана</th>
-            <th>Действия</th>
-          </tr>
-        </thead>
-        <tbody id="playersTableBody"></tbody>
-      </table>
-
-      <button class="btn-save" id="generateCommandsBtn">Сформировать команды для GitHub</button>
-
-      <div id="commands" style="display:none;"></div>
-
-      <p>Редактировать JSON можно здесь:<br/>
-        <a id="githubLink" href="https://github.com/VerryBestVB/unban-check/blob/main/data.json" target="_blank" rel="noopener noreferrer">GitHub: data.json</a>
-      </p>
+    <div id="panel" style="display:none">
+      <div id="players"></div>
+      <button onclick="generateJSON()">Сгенерировать JSON</button>
+      <textarea id="output" rows="10" readonly></textarea>
     </div>
   </div>
 
-<script>
-  const ADMIN_PASSWORD = 'BVNt539greek7BV98';
+  <script>
+    const PASSWORD = "BVNt539greek7BV98";
+    let players = {
+      "PlayerOne": { status: "на рассмотрении", unban_at: null },
+      "PlayerTwo": { status: "пермач", unban_at: null },
+      "PlayerThree": { status: "одобрено", unban_at: "2025-05-25T16:00:00Z" },
+    };
 
-  let players = {};
-  let isLoggedIn = false;
-
-  const passwordInput = document.getElementById('passwordInput');
-  const loginBtn = document.getElementById('loginBtn');
-  const statusMessage = document.getElementById('statusMessage');
-  const adminContent = document.getElementById('adminContent');
-  const playersTableBody = document.getElementById('playersTableBody');
-  const commandsBlock = document.getElementById('commands');
-  const generateCommandsBtn = document.getElementById('generateCommandsBtn');
-
-  async function loadData() {
-    try {
-      const response = await fetch('https://raw.githubusercontent.com/VerryBestVB/unban-check/main/data.json');
-      players = await response.json();
-    } catch (e) {
-      alert('Ошибка загрузки данных: ' + e.message);
+    function loadPanel() {
+      const pass = document.getElementById("adminPass").value;
+      if (pass !== PASSWORD) return alert("Неверный пароль");
+      document.getElementById("panel").style.display = "block";
+      renderPlayers();
     }
-  }
 
-  function renderTable() {
-    playersTableBody.innerHTML = '';
-
-    for (const [nick, data] of Object.entries(players)) {
-      // Создаем строку
-      const tr = document.createElement('tr');
-
-      // Ник — кликабельный, но пока просто текст
-      const tdNick = document.createElement('td');
-      tdNick.textContent = nick;
-      tdNick.style.cursor = 'default';
-      tr.appendChild(tdNick);
-
-      // Статус — селект с вариантами
-      const tdStatus = document.createElement('td');
-      const selectStatus = document.createElement('select');
-      selectStatus.innerHTML = `
-        <option value="approved">Разбанен</option>
-        <option value="review">На рассмотрении</option>
-        <option value="tempban">Временный бан</option>
-        <option value="perm">Бессрочный бан</option>
-        <option value="denied">Отклонена апелляция</option>
-      `;
-      // Определяем что выбрать
-      let selVal = 'approved';
-      switch ((data.status || '').toLowerCase()) {
-        case 'approved': selVal = 'approved'; break;
-        case 'на рассмотрении':
-        case 'review': selVal = 'review'; break;
-        case 'tempban': selVal = 'tempban'; break;
-        case 'перманентный бан':
-        case 'perm':
-        case 'перм':
-          selVal = 'perm'; break;
-        case 'отклонено':
-        case 'denied':
-        case 'skip':
-          selVal = 'denied'; break;
+    function renderPlayers() {
+      const container = document.getElementById("players");
+      container.innerHTML = "";
+      for (const [nick, data] of Object.entries(players)) {
+        const div = document.createElement("div");
+        div.className = "player-block";
+        div.innerHTML = `
+          <strong>${nick}</strong> — <span class="status status-${data.status.replaceAll(" ", "_")}">${data.status}</span><br>
+          <label>Изменить статус: </label>
+          <select onchange="updateStatus('${nick}', this.value)">
+            <option value="">Выбрать действие</option>
+            <option value="одобрено">Разбанить (одобрено)</option>
+            <option value="отклонено">Отклонить апелляцию</option>
+            <option value="пермач">Бессрочная блокировка</option>
+            <option value="custom">Временный бан (ввести)</option>
+            <option value="1">Бан на 1 день</option>
+            <option value="3">Бан на 3 дня</option>
+            <option value="7">Бан на 7 дней</option>
+            <option value="14">Бан на 14 дней</option>
+            <option value="30">Бан на 30 дней</option>
+          </select>
+          <div id="custom-${nick}" style="display:none">
+            <input type="number" placeholder="Дни" onchange="setCustomBan('${nick}', this.value)" />
+          </div>
+        `;
+        container.appendChild(div);
       }
-      selectStatus.value = selVal;
-      selectStatus.className = selVal;
-      tdStatus.appendChild(selectStatus);
-      tr.appendChild(tdStatus);
-
-      // Время разбана (текст или инпут, если временный бан)
-      const tdTime = document.createElement('td');
-      if (selectStatus.value === 'tempban') {
-        const inputTime = document.createElement('input');
-        inputTime.type = 'datetime-local';
-        // Преобразуем дату из JSON в нужный формат
-        if(data.unban_at) {
-          const dt = new Date(data.unban_at);
-          // YYYY-MM-DDTHH:mm
-          const localISOTime = dt.toISOString().slice(0,16);
-          inputTime.value = localISOTime;
-        }
-        tdTime.appendChild(inputTime);
-      } else {
-        tdTime.textContent = data.unban_at ? data.unban_at : '-';
-      }
-      tr.appendChild(tdTime);
-
-      // Действия — 3 кнопки: Одобрить, Отклонить, Сбросить (ничего не менять)
-      const tdActions = document.createElement('td');
-      const btnApprove = document.createElement('button');
-      btnApprove.textContent = 'Одобрить';
-      btnApprove.className = 'btn-approve';
-      btnApprove.onclick = () => {
-        selectStatus.value = 'approved';
-        selectStatus.className = 'approved';
-        tdTime.textContent = '-';
-        if (tdTime.firstChild) tdTime.removeChild(tdTime.firstChild);
-      };
-
-      const btnDeny = document.createElement('button');
-      btnDeny.textContent = 'Отклонить';
-      btnDeny.className = 'btn-deny';
-      btnDeny.onclick = () => {
-        selectStatus.value = 'denied';
-        selectStatus.className = 'denied';
-        tdTime.textContent = '-';
-        if (tdTime.firstChild) tdTime.removeChild(tdTime.firstChild);
-      };
-
-      const btnReset = document.createElement('button');
-      btnReset.textContent = 'Обсудить';
-      btnReset.className = 'btn-review';
-      btnReset.onclick = () => {
-        selectStatus.value = 'review';
-        selectStatus.className = 'review';
-
-        // Для review даем пустое время разбана
-        if (tdTime.firstChild) tdTime.removeChild(tdTime.firstChild);
-        tdTime.textContent = '-';
-      };
-
-      tdActions.appendChild(btnApprove);
-      tdActions.appendChild(btnDeny);
-      tdActions.appendChild(btnReset);
-
-      tr.appendChild(tdActions);
-
-      // Обновляем цвет при изменении селекта
-      selectStatus.onchange = () => {
-        selectStatus.className = selectStatus.value;
-
-        // Если выбран временный бан — показываем инпут для даты
-        if (selectStatus.value === 'tempban') {
-          tdTime.textContent = '';
-          const inputTime = document.createElement('input');
-          inputTime.type = 'datetime-local';
-          tdTime.appendChild(inputTime);
-        } else {
-          // Иначе убираем инпут и показываем дату или "-"
-          if (tdTime.firstChild) tdTime.removeChild(tdTime.firstChild);
-          tdTime.textContent = data.unban_at || '-';
-        }
-      };
-
-      playersTableBody.appendChild(tr);
     }
-  }
 
-  function generateCommands() {
-    let commands = '';
-
-    const rows = playersTableBody.querySelectorAll('tr');
-    rows.forEach(row => {
-      const nick = row.children[0].textContent.trim();
-      const status = row.children[1].querySelector('select').value;
-      const tdTime = row.children[2];
-      let timeVal = tdTime.textContent.trim();
-
-      if (status === 'tempban') {
-        const input = tdTime.querySelector('input');
-        if (input && input.value) {
-          timeVal = input.value;
-          // Преобразуем в ISO с часами UTC (пример: 2025-05-22T12:00)
-          // Для удобства — оставим как есть (локальное время), но можно уточнить по времени
-        } else {
-          timeVal = '';
-        }
+    function updateStatus(nick, value) {
+      if (value === "custom") {
+        document.getElementById(`custom-${nick}`).style.display = "block";
+        return;
       }
-
-      switch (status) {
-        case 'approved':
-          commands += `ban-status ${nick} appr\n`;
-          break;
-        case 'review':
-          commands += `ban-status ${nick} review\n`;
-          break;
-        case 'tempban':
-          if (timeVal) {
-            commands += `ban-status ${nick} vban ${timeVal}\n`;
-          }
-          break;
-        case 'perm':
-          commands += `ban-status ${nick} pban\n`;
-          break;
-        case 'denied':
-          commands += `ban-status ${nick} skip\n`;
-          break;
+      document.getElementById(`custom-${nick}`).style.display = "none";
+      if (["одобрено", "отклонено", "пермач"].includes(value)) {
+        players[nick].status = value;
+        players[nick].unban_at = value === "одобрено" ? new Date().toISOString() : null;
+      } else if (!isNaN(parseInt(value))) {
+        const days = parseInt(value);
+        players[nick].status = "временный бан";
+        const unban = new Date();
+        unban.setDate(unban.getDate() + days);
+        players[nick].unban_at = unban.toISOString();
       }
-    });
-
-    commandsBlock.style.display = 'block';
-    commandsBlock.textContent = commands || 'Нет изменений для генерации.';
-  }
-
-  loginBtn.onclick = () => {
-    if (passwordInput.value === ADMIN_PASSWORD) {
-      isLoggedIn = true;
-      statusMessage.textContent = 'Добро пожаловать, администратор!';
-      passwordInput.style.display = 'none';
-      loginBtn.style.display = 'none';
-      adminContent.style.display = 'block';
-      loadData().then(() => renderTable());
-    } else {
-      statusMessage.textContent = 'Неверный пароль!';
-      isLoggedIn = false;
-      adminContent.style.display = 'none';
+      renderPlayers();
     }
-  };
 
-  generateCommandsBtn.onclick = () => {
-    generateCommands();
-  };
-</script>
+    function setCustomBan(nick, days) {
+      if (!days || isNaN(days)) return;
+      const d = parseInt(days);
+      const date = new Date();
+      date.setDate(date.getDate() + d);
+      players[nick].status = "временный бан";
+      players[nick].unban_at = date.toISOString();
+      renderPlayers();
+    }
+
+    function generateJSON() {
+      document.getElementById("output").value = JSON.stringify(players, null, 2);
+    }
+  </script>
 </body>
 </html>
