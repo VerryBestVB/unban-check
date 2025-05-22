@@ -1,10 +1,42 @@
 {
-  "Player1": {
+  "PlayerOne": {
     "status": "Одобрено",
-    "unban_at": "2025-05-25T16:00:00Z"
+    "unban_at": "2025-05-30T18:00:00Z"
   },
-  "Player2": {
+  "PlayerTwo": {
+    "status": "На рассмотрении",
+    "unban_at": "2025-06-05T12:00:00Z"
+  },
+  "PlayerThree": {
     "status": "Отклонено",
-    "unban_at": "2025-05-30T12:00:00Z"
+    "unban_at": "2025-05-25T09:00:00Z"
+  },
+  "PlayerFour": {
+    "status": "Пермач",
+    "unban_at": "2100-01-01T00:00:00Z"
+  },
+  "PlayerFive": {
+    "status": "Одобрено",
+    "unban_at": "2025-05-28T14:00:00Z"
+  },
+  "PlayerSix": {
+    "status": "На рассмотрении",
+    "unban_at": "2025-06-01T20:00:00Z"
+  },
+  "PlayerSeven": {
+    "status": "Отклонено",
+    "unban_at": "2025-05-27T10:00:00Z"
+  },
+  "PlayerEight": {
+    "status": "Одобрено",
+    "unban_at": "2025-05-29T16:00:00Z"
+  },
+  "PlayerNine": {
+    "status": "Пермач",
+    "unban_at": "2100-01-01T00:00:00Z"
+  },
+  "PlayerTen": {
+    "status": "На рассмотрении",
+    "unban_at": "2025-06-03T08:00:00Z"
   }
 }
