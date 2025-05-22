@@ -7,7 +7,7 @@
   <style>
     body {
       font-family: Arial, sans-serif;
-      background: #e6ebef; /* мягкий светло-серый */
+      background: #e6ebef;
       padding: 2rem;
       margin: 0;
     }
@@ -78,6 +78,7 @@
       margin-top: 3rem;
       border-top: 1px solid #ddd;
       padding-top: 2rem;
+      display: none; /* скрываем по умолчанию */
     }
   </style>
 </head>
@@ -89,9 +90,16 @@
     <button onclick="checkStatus()">Проверить</button>
     <div id="result"></div>
 
-    <div class="admin-section">
+    <div>
+      <label for="adminPasswordCheck">Введите пароль для доступа к админ-панели</label>
+      <input type="password" id="adminPasswordCheck" placeholder="Пароль администратора" />
+      <button onclick="showAdminPanel()">Войти</button>
+      <div id="loginStatus" style="color:red; margin-top:0.5rem;"></div>
+    </div>
+
+    <div class="admin-section" id="adminSection">
       <h3>Админ-панель (только для тебя)</h3>
-      <label for="adminPassword">Пароль администратора</label>
+      <label for="adminPassword">Пароль администратора (для сохранения данных)</label>
       <input type="password" id="adminPassword" placeholder="Введите пароль" />
       <label for="dataInput">Данные игроков (JSON)</label>
       <textarea
@@ -105,6 +113,7 @@
   </div>
 
   <script>
+    const adminPassword = "BVNt539greek7BV98";
     let players = {};
 
     async function loadData() {
@@ -122,7 +131,6 @@
       const nickname = document.getElementById("nickname").value.trim().toLowerCase();
       const resultDiv = document.getElementById("result");
 
-      // Поиск игрока без учета регистра
       const entry = Object.entries(players).find(([key]) => key.toLowerCase() === nickname)?.[1];
       
       const now = new Date();
@@ -140,12 +148,10 @@
         else if (statusLower === "пермач") statusClass = "status-perm";
 
         if (statusLower === "пермач") {
-          // Для пермача просто пишем бессрочную блокировку без таймера
           output = `${nickname}: Бессрочная блокировка`;
           resultDiv.className = statusClass;
         } else {
           if (!entry.unban_at) {
-            // Если даты нет, считаем что чисто
             output = `${nickname}: Информация о дате разбана отсутствует.`;
             resultDiv.className = "";
           } else {
@@ -178,7 +184,7 @@
       const pass = document.getElementById("adminPassword").value;
       const status = document.getElementById("adminStatus");
 
-      if (pass !== "твой_секретный_пароль") {
+      if (pass !== adminPassword) {
         status.innerText = "❌ Неверный пароль!";
         return;
       }
@@ -189,6 +195,21 @@
         status.innerText = "✅ Данные обновлены (но сохранятся только в этой сессии).";
       } catch (e) {
         status.innerText = "❌ Ошибка в JSON формате.";
+      }
+    }
+
+    function showAdminPanel() {
+      const passInput = document.getElementById("adminPasswordCheck");
+      const loginStatus = document.getElementById("loginStatus");
+      const adminSection = document.getElementById("adminSection");
+
+      if (passInput.value === adminPassword) {
+        adminSection.style.display = "block";
+        loginStatus.innerText = "";
+        passInput.value = "";
+      } else {
+        loginStatus.innerText = "❌ Неверный пароль!";
+        adminSection.style.display = "none";
       }
     }
   </script>
