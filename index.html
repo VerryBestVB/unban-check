@@ -1,27 +1,105 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Проверка статуса разбана</title>
   <style>
-    body { font-family: Arial, sans-serif; background: #f4f4f4; padding: 2rem; }
-    .container { max-width: 500px; margin: auto; background: white; padding: 2rem; border-radius: 10px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
-    label { display: block; margin-top: 1rem; font-weight: bold; }
-    input, textarea { width: 100%; padding: 0.5rem; margin-top: 0.3rem; border: 1px solid #ccc; border-radius: 5px; }
-    button { margin-top: 1.5rem; padding: 0.7rem 1rem; background: #4CAF50; color: white; border: none; border-radius: 5px; cursor: pointer; }
-    button:hover { background: #45a049; }
-    #result { margin-top: 1.5rem; font-size: 1.2rem; font-weight: bold; }
-    .admin-section { margin-top: 3rem; border-top: 1px solid #ddd; padding-top: 2rem; }
+    body {
+      font-family: Arial, sans-serif;
+      background: #f4f4f4;
+      padding: 2rem;
+    }
+    .container {
+      max-width: 500px;
+      margin: auto;
+      background: white;
+      padding: 2rem;
+      border-radius: 10px;
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    }
+    label {
+      display: block;
+      margin-top: 1rem;
+      font-weight: bold;
+    }
+    input,
+    textarea {
+      width: 100%;
+      padding: 0.5rem;
+      margin-top: 0.3rem;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+      font-size: 1rem;
+      font-family: monospace;
+    }
+    button {
+      margin-top: 1.5rem;
+      padding: 0.7rem 1rem;
+      background: #4caf50;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 1rem;
+    }
+    button:hover {
+      background: #45a049;
+    }
+    #result {
+      margin-top: 1.5rem;
+      font-size: 1.2rem;
+      font-weight: bold;
+      min-height: 2em;
+      white-space: pre-wrap;
+    }
+
+    /* Цвета статусов */
+    .status-approved {
+      color: green;
+      font-weight: bold;
+    }
+    .status-review {
+      color: orange;
+      font-weight: bold;
+    }
+    .status-denied {
+      color: red;
+      font-weight: bold;
+    }
+    .status-perm {
+      color: black;
+      font-weight: bolder;
+    }
+
+    .admin-section {
+      margin-top: 3rem;
+      border-top: 1px solid #ddd;
+      padding-top: 2rem;
+    }
   </style>
 </head>
 <body>
   <div class="container">
     <h2>Проверка статуса разбана</h2>
     <label for="nickname">Ник игрока</label>
-    <input type="text" id="nickname" placeholder="Введите ник...">
+    <input type="text" id="nickname" placeholder="Введите ник..." />
     <button onclick="checkStatus()">Проверить</button>
     <div id="result"></div>
+
+    <div class="admin-section">
+      <h3>Админ-панель (только для тебя)</h3>
+      <label for="adminPassword">Пароль администратора</label>
+      <input type="password" id="adminPassword" placeholder="Введите пароль" />
+      <label for="dataInput">Данные игроков (JSON)</label>
+      <textarea
+        id="dataInput"
+        rows="10"
+        placeholder='{"Player1": {"status": "Одобрено", "unban_at": "2025-05-25T16:00:00Z"}}'
+      ></textarea>
+      <button onclick="saveData()">Сохранить</button>
+      <div id="adminStatus"></div>
+    </div>
   </div>
 
   <script>
@@ -29,7 +107,7 @@
 
     async function loadData() {
       try {
-        const response = await fetch('data.json');
+        const response = await fetch("data.json");
         players = await response.json();
       } catch (e) {
         console.error("Ошибка загрузки JSON:", e);
@@ -47,26 +125,56 @@
 
       if (!entry) {
         output = "Игрок не найден или чистый.";
+        resultDiv.className = "";
       } else {
-        const status = entry.status;
+        const statusLower = entry.status.toLowerCase();
         const unbanDate = new Date(entry.unban_at);
         const timeDiff = unbanDate - now;
+
+        // Выбираем класс для цвета
+        let statusClass = "";
+        if (statusLower === "одобрено") statusClass = "status-approved";
+        else if (statusLower === "на рассмотрении") statusClass = "status-review";
+        else if (statusLower === "отклонено") statusClass = "status-denied";
+        else if (statusLower === "пермач") statusClass = "status-perm";
 
         if (timeDiff <= 0) {
           const passedSinceUnban = (now - unbanDate) / 1000 / 60 / 60 / 24;
           if (passedSinceUnban >= 3) {
             output = `${nickname}: Чисто, нет приостановки.`;
+            resultDiv.className = "";
           } else {
-            output = `${nickname}: ${status}, разбан уже был.`;
+            output = `${nickname}: ${entry.status}, разбан уже был.`;
+            resultDiv.className = statusClass;
           }
         } else {
           const totalHours = Math.floor(timeDiff / 1000 / 60 / 60);
           const days = Math.floor(totalHours / 24);
           const hours = totalHours % 24;
-          output = `${nickname}: ${status}, до разбана: ${days} дн. ${hours} ч.`;
+          output = `${nickname}: ${entry.status}, до разбана: ${days} дн. ${hours} ч.`;
+          resultDiv.className = statusClass;
         }
       }
       resultDiv.innerText = output;
+    }
+
+    function saveData() {
+      const pass = document.getElementById("adminPassword").value;
+      const status = document.getElementById("adminStatus");
+
+      if (pass !== "твой_секретный_пароль") {
+        status.innerText = "❌ Неверный пароль!";
+        return;
+      }
+
+      try {
+        const newData = JSON.parse(document.getElementById("dataInput").value);
+        players = newData;
+        status.innerText =
+          "✅ Данные обновлены (но сохранятся только в этой сессии).";
+      } catch (e) {
+        status.innerText = "❌ Ошибка в JSON формате.";
+      }
     }
   </script>
 </body>
