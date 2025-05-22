@@ -12,20 +12,19 @@
       margin: 0;
     }
     .container {
-      max-width: 500px;
+      max-width: 600px;
       margin: auto;
       background: white;
       padding: 2rem;
       border-radius: 10px;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
     }
     label {
       display: block;
       margin-top: 1rem;
       font-weight: bold;
     }
-    input,
-    textarea {
+    input, textarea {
       width: 100%;
       padding: 0.5rem;
       margin-top: 0.3rem;
@@ -33,6 +32,7 @@
       border-radius: 5px;
       font-size: 1rem;
       font-family: monospace;
+      box-sizing: border-box;
     }
     button {
       margin-top: 1.5rem;
@@ -56,29 +56,59 @@
       white-space: pre-wrap;
     }
 
-    /* Цвета статусов */
+    /* Цвета и рамки статусов */
     .status-approved {
       color: green;
       font-weight: bold;
+      border: 1px solid green;
+      padding: 0.2em 0.5em;
+      border-radius: 5px;
+      display: inline-block;
     }
     .status-review {
       color: orange;
       font-weight: bold;
+      border: 1px solid orange;
+      padding: 0.2em 0.5em;
+      border-radius: 5px;
+      display: inline-block;
     }
     .status-denied {
       color: red;
       font-weight: bold;
+      border: 1px solid red;
+      padding: 0.2em 0.5em;
+      border-radius: 5px;
+      display: inline-block;
     }
     .status-perm {
       color: black;
       font-weight: bolder;
+      border: 1px solid black;
+      padding: 0.2em 0.5em;
+      border-radius: 5px;
+      display: inline-block;
+    }
+    .status-clear {
+      color: gray;
+      font-style: italic;
     }
 
     .admin-section {
       margin-top: 3rem;
       border-top: 1px solid #ddd;
       padding-top: 2rem;
-      display: none; /* скрываем по умолчанию */
+      display: none;
+    }
+    #loginStatus, #adminStatus {
+      margin-top: 0.5rem;
+      font-weight: bold;
+    }
+    #loginStatus {
+      color: red;
+    }
+    #adminStatus {
+      color: green;
     }
   </style>
 </head>
@@ -94,124 +124,249 @@
       <label for="adminPasswordCheck">Введите пароль для доступа к админ-панели</label>
       <input type="password" id="adminPasswordCheck" placeholder="Пароль администратора" />
       <button onclick="showAdminPanel()">Войти</button>
-      <div id="loginStatus" style="color:red; margin-top:0.5rem;"></div>
+      <div id="loginStatus"></div>
     </div>
 
     <div class="admin-section" id="adminSection">
-      <h3>Админ-панель (только для тебя)</h3>
-      <label for="adminPassword">Пароль администратора (для сохранения данных)</label>
-      <input type="password" id="adminPassword" placeholder="Введите пароль" />
-      <label for="dataInput">Данные игроков (JSON)</label>
-      <textarea
-        id="dataInput"
-        rows="10"
-        placeholder='{"Player1": {"status": "Одобрено", "unban_at": "2025-05-25T16:00:00Z"}}'
-      ></textarea>
-      <button onclick="saveData()">Сохранить</button>
+      <h3>Админ-панель (управление банами)</h3>
+      <label for="adminCommand">Введите команду</label>
+      <input type="text" id="adminCommand" placeholder="Например: ban-status PlayerTwo vban 7d" />
+      <button onclick="processCommand()">Выполнить</button>
       <div id="adminStatus"></div>
+
+      <label for="dataInput" style="margin-top: 1.5rem;">Данные игроков (JSON)</label>
+      <textarea id="dataInput" rows="10" placeholder='{"Player1": {"status": "Одобрено", "unban_at": "2025-05-25T16:00:00Z"}}'></textarea>
+      <button onclick="saveData()">Сохранить</button>
     </div>
   </div>
 
-  <script>
-    const adminPassword = "BVNt539greek7BV98";
-    let players = {};
+<script>
+  const adminPassword = "BVNt539greek7BV98";
+  let players = {};
 
-    async function loadData() {
-      try {
-        const response = await fetch("data.json");
-        players = await response.json();
-      } catch (e) {
-        console.error("Ошибка загрузки JSON:", e);
+  // Загрузка данных из поля, если есть
+  function loadFromTextarea() {
+    try {
+      const txt = document.getElementById("dataInput").value.trim();
+      if (txt) {
+        players = JSON.parse(txt);
+      } else {
+        players = {};
       }
+    } catch (e) {
+      alert("Ошибка в JSON данных: " + e.message);
+    }
+  }
+
+  function updateTextarea() {
+    document.getElementById("dataInput").value = JSON.stringify(players, null, 2);
+  }
+
+  async function checkStatus() {
+    if (Object.keys(players).length === 0) {
+      loadFromTextarea();
     }
 
-    async function checkStatus() {
-      if (Object.keys(players).length === 0) await loadData();
+    const nicknameInput = document.getElementById("nickname").value.trim();
+    const nickname = nicknameInput.toLowerCase();
+    const resultDiv = document.getElementById("result");
 
-      const nickname = document.getElementById("nickname").value.trim().toLowerCase();
-      const resultDiv = document.getElementById("result");
+    const entry = Object.entries(players).find(([key]) => key.toLowerCase() === nickname)?.[1];
 
-      const entry = Object.entries(players).find(([key]) => key.toLowerCase() === nickname)?.[1];
-      
-      const now = new Date();
-      let output = "";
+    const now = new Date();
+    let output = "";
+    let statusClass = "";
 
-      if (!entry) {
-        output = "Игрок не найден или чистый.";
-        resultDiv.className = "";
+    if (!entry) {
+      output = "Игрок не найден или чистый.";
+      resultDiv.className = "status-clear";
+    } else {
+      const statusLower = entry.status.toLowerCase();
+
+      switch (statusLower) {
+        case "одобрено":
+          statusClass = "status-approved";
+          break;
+        case "на рассмотрении":
+          statusClass = "status-review";
+          break;
+        case "отклонено":
+          statusClass = "status-denied";
+          break;
+        case "пермач":
+          statusClass = "status-perm";
+          break;
+        default:
+          statusClass = "status-clear";
+      }
+
+      if (statusLower === "пермач") {
+        output = `${nicknameInput}: Бессрочная блокировка`;
+      } else if (statusLower === "одобрено") {
+        output = `${nicknameInput}: Одобрено, игрок разбанен.`;
+      } else if (statusLower === "отклонено") {
+        output = `${nicknameInput}: Отклонено, бан сохранён.`;
+      } else if (statusLower === "на рассмотрении") {
+        output = `${nicknameInput}: На рассмотрении.`;
       } else {
-        const statusLower = entry.status.toLowerCase();
-        let statusClass = "";
-        if (statusLower === "одобрено") statusClass = "status-approved";
-        else if (statusLower === "на рассмотрении") statusClass = "status-review";
-        else if (statusLower === "отклонено") statusClass = "status-denied";
-        else if (statusLower === "пермач") statusClass = "status-perm";
-
-        if (statusLower === "пермач") {
-          output = `${nickname}: Бессрочная блокировка`;
-          resultDiv.className = statusClass;
+        // Временный бан
+        if (!entry.unban_at) {
+          output = `${nicknameInput}: Дата разбана не указана.`;
+          statusClass = "status-clear";
         } else {
-          if (!entry.unban_at) {
-            output = `${nickname}: Информация о дате разбана отсутствует.`;
-            resultDiv.className = "";
+          const unbanDate = new Date(entry.unban_at);
+          const timeDiff = unbanDate - now;
+          if (timeDiff <= 0) {
+            output = `${nicknameInput}: Чисто, бан истёк.`;
+            statusClass = "status-clear";
           } else {
-            const unbanDate = new Date(entry.unban_at);
-            const timeDiff = unbanDate - now;
-
-            if (timeDiff <= 0) {
-              const passedSinceUnban = (now - unbanDate) / 1000 / 60 / 60 / 24;
-              if (passedSinceUnban >= 3) {
-                output = `${nickname}: Чисто, нет приостановки.`;
-                resultDiv.className = "";
-              } else {
-                output = `${nickname}: ${entry.status}, разбан уже был.`;
-                resultDiv.className = statusClass;
-              }
-            } else {
-              const totalHours = Math.floor(timeDiff / 1000 / 60 / 60);
-              const days = Math.floor(totalHours / 24);
-              const hours = totalHours % 24;
-              output = `${nickname}: ${entry.status}, до разбана: ${days} дн. ${hours} ч.`;
-              resultDiv.className = statusClass;
-            }
+            const totalHours = Math.floor(timeDiff / 1000 / 60 / 60);
+            const days = Math.floor(totalHours / 24);
+            const hours = totalHours % 24;
+            output = `${nicknameInput}: Временный бан, до разбана: ${days} дн. ${hours} ч.`;
           }
         }
       }
-      resultDiv.innerText = output;
+    }
+    resultDiv.className = statusClass;
+    resultDiv.innerText = output;
+  }
+
+  function showAdminPanel() {
+    const passInput = document.getElementById("adminPasswordCheck");
+    const loginStatus = document.getElementById("loginStatus");
+    const adminSection = document.getElementById("adminSection");
+
+    if (passInput.value === adminPassword) {
+      adminSection.style.display = "block";
+      loginStatus.innerText = "";
+      passInput.value = "";
+    } else {
+      loginStatus.innerText = "❌ Неверный пароль!";
+      adminSection.style.display = "none";
+    }
+  }
+
+  function saveData() {
+    const adminStatus = document.getElementById("adminStatus");
+    try {
+      const newData = JSON.parse(document.getElementById("dataInput").value);
+      players = newData;
+      adminStatus.style.color = "green";
+      adminStatus.innerText = "✅ Данные обновлены (сохранятся только в этой сессии)";
+    } catch (e) {
+      adminStatus.style.color = "red";
+      adminStatus.innerText = "❌ Ошибка в JSON формате.";
+    }
+  }
+
+  // Парсинг времени из строки, например "7d", "12h", "30m"
+  function parseDuration(durationStr) {
+    // Простая поддержка: d - дни, h - часы, m - минуты
+    const regex = /^(\d+)([dhm])$/i;
+    const match = durationStr.match(regex);
+    if (!match) return null;
+    const value = parseInt(match[1], 10);
+    const unit = match[2].toLowerCase();
+    let ms = 0;
+    if (unit === "d") ms = value * 24 * 60 * 60 * 1000;
+    else if (unit === "h") ms = value * 60 * 60 * 1000;
+    else if (unit === "m") ms = value * 60 * 1000;
+    else return null;
+    return ms;
+  }
+
+  function processCommand() {
+    const adminCommandInput = document.getElementById("adminCommand");
+    const adminStatus = document.getElementById("adminStatus");
+    const commandText = adminCommandInput.value.trim();
+
+    if (!commandText) {
+      adminStatus.style.color = "red";
+      adminStatus.innerText = "Введите команду.";
+      return;
     }
 
-    function saveData() {
-      const pass = document.getElementById("adminPassword").value;
-      const status = document.getElementById("adminStatus");
+    // Формат команды: ban-status NICK CMD [ПАРАМЕТР]
+    // CMD: vban (временный бан), pban (пермач), appr (одобрено - снять бан), skip (отклонено)
+    const parts = commandText.split(/\s+/);
+    if (parts.length < 3) {
+      adminStatus.style.color = "red";
+      adminStatus.innerText = "Неверный формат команды.";
+      return;
+    }
 
-      if (pass !== adminPassword) {
-        status.innerText = "❌ Неверный пароль!";
+    const [cmdBase, nick, cmd, param] = parts;
+
+    if (cmdBase.toLowerCase() !== "ban-status") {
+      adminStatus.style.color = "red";
+      adminStatus.innerText = "Команда должна начинаться с ban-status.";
+      return;
+    }
+
+    if (!nick) {
+      adminStatus.style.color = "red";
+      adminStatus.innerText = "Укажите ник игрока.";
+      return;
+    }
+
+    const nickKey = nick;
+
+    // Инициализируем запись, если нет
+    if (!players[nickKey]) {
+      players[nickKey] = { status: "На рассмотрении" };
+    }
+
+    switch (cmd.toLowerCase()) {
+      case "vban":
+        // временный бан с параметром - длительность
+        if (!param) {
+          adminStatus.style.color = "red";
+          adminStatus.innerText = "Для vban укажите длительность (например, 7d, 12h).";
+          return;
+        }
+        const ms = parseDuration(param);
+        if (ms === null) {
+          adminStatus.style.color = "red";
+          adminStatus.innerText = "Неверный формат длительности. Используйте 7d, 12h или 30m.";
+          return;
+        }
+        const unbanDate = new Date(Date.now() + ms);
+        players[nickKey] = { status: "На рассмотрении", unban_at: unbanDate.toISOString() };
+        adminStatus.style.color = "green";
+        adminStatus.innerText = `Игрок ${nick} получил временный бан на ${param}.`;
+        break;
+
+      case "pban":
+        // бессрочный бан
+        players[nickKey] = { status: "Пермач" };
+        adminStatus.style.color = "green";
+        adminStatus.innerText = `Игрок ${nick} получил бессрочный бан.`;
+        break;
+
+      case "appr":
+        // одобрено (разбан)
+        players[nickKey] = { status: "Одобрено" };
+        adminStatus.style.color = "green";
+        adminStatus.innerText = `Игрок ${nick} одобрен и разбанен.`;
+        break;
+
+      case "skip":
+        // отклонено (бан оставляем)
+        players[nickKey] = { status: "Отклонено" };
+        adminStatus.style.color = "green";
+        adminStatus.innerText = `Игрок ${nick} отклонён (бан остаётся).`;
+        break;
+
+      default:
+        adminStatus.style.color = "red";
+        adminStatus.innerText = `Неизвестная команда: ${cmd}`;
         return;
-      }
-
-      try {
-        const newData = JSON.parse(document.getElementById("dataInput").value);
-        players = newData;
-        status.innerText = "✅ Данные обновлены (но сохранятся только в этой сессии).";
-      } catch (e) {
-        status.innerText = "❌ Ошибка в JSON формате.";
-      }
     }
 
-    function showAdminPanel() {
-      const passInput = document.getElementById("adminPasswordCheck");
-      const loginStatus = document.getElementById("loginStatus");
-      const adminSection = document.getElementById("adminSection");
-
-      if (passInput.value === adminPassword) {
-        adminSection.style.display = "block";
-        loginStatus.innerText = "";
-        passInput.value = "";
-      } else {
-        loginStatus.innerText = "❌ Неверный пароль!";
-        adminSection.style.display = "none";
-      }
-    }
-  </script>
+    updateTextarea();
+    adminCommandInput.value = "";
+  }
+</script>
 </body>
 </html>
