@@ -114,52 +114,50 @@
       }
     }
 
-async function checkStatus() {
-  if (Object.keys(players).length === 0) await loadData();
+    async function checkStatus() {
+      if (Object.keys(players).length === 0) await loadData();
 
-  const nickname = document.getElementById("nickname").value.trim().toLowerCase();
-  const resultDiv = document.getElementById("result");
+      const nickname = document.getElementById("nickname").value.trim().toLowerCase();
+      const resultDiv = document.getElementById("result");
 
-  // Поиск игрока без учета регистра
-  const entry = Object.entries(players).find(([key]) => key.toLowerCase() === nickname)?.[1];
-  
-  const now = new Date();
-  let output = "";
+      // Поиск игрока без учета регистра
+      const entry = Object.entries(players).find(([key]) => key.toLowerCase() === nickname)?.[1];
+      
+      const now = new Date();
+      let output = "";
 
-  if (!entry) {
-    output = "Игрок не найден или чистый.";
-    resultDiv.className = "";
-  } else {
-    const statusLower = entry.status.toLowerCase();
-    const unbanDate = new Date(entry.unban_at);
-    const timeDiff = unbanDate - now;
-
-    let statusClass = "";
-    if (statusLower === "одобрено") statusClass = "status-approved";
-    else if (statusLower === "на рассмотрении") statusClass = "status-review";
-    else if (statusLower === "отклонено") statusClass = "status-denied";
-    else if (statusLower === "пермач") statusClass = "status-perm";
-
-    if (timeDiff <= 0) {
-      const passedSinceUnban = (now - unbanDate) / 1000 / 60 / 60 / 24;
-      if (passedSinceUnban >= 3) {
-        output = `${nickname}: Чисто, нет приостановки.`;
+      if (!entry) {
+        output = "Игрок не найден или чистый.";
         resultDiv.className = "";
       } else {
-        output = `${nickname}: ${entry.status}, разбан уже был.`;
-        resultDiv.className = statusClass;
-      }
-    } else {
-      const totalHours = Math.floor(timeDiff / 1000 / 60 / 60);
-      const days = Math.floor(totalHours / 24);
-      const hours = totalHours % 24;
-      output = `${nickname}: ${entry.status}, до разбана: ${days} дн. ${hours} ч.`;
-      resultDiv.className = statusClass;
-    }
-  }
-  resultDiv.innerText = output;
-}
+        const statusLower = entry.status.toLowerCase();
+        const unbanDate = new Date(entry.unban_at);
+        const timeDiff = unbanDate - now;
 
+        let statusClass = "";
+        if (statusLower === "одобрено") statusClass = "status-approved";
+        else if (statusLower === "на рассмотрении") statusClass = "status-review";
+        else if (statusLower === "отклонено") statusClass = "status-denied";
+        else if (statusLower === "пермач") statusClass = "status-perm";
+
+        if (timeDiff <= 0) {
+          const passedSinceUnban = (now - unbanDate) / 1000 / 60 / 60 / 24;
+          if (passedSinceUnban >= 3) {
+            output = `${nickname}: Чисто, нет приостановки.`;
+            resultDiv.className = "";
+          } else {
+            output = `${nickname}: ${entry.status}, разбан уже был.`;
+            resultDiv.className = statusClass;
+          }
+        } else {
+          const totalHours = Math.floor(timeDiff / 1000 / 60 / 60);
+          const days = Math.floor(totalHours / 24);
+          const hours = totalHours % 24;
+          output = `${nickname}: ${entry.status}, до разбана: ${days} дн. ${hours} ч.`;
+          resultDiv.className = statusClass;
+        }
+      }
+      resultDiv.innerText = output;
     }
 
     function saveData() {
@@ -174,8 +172,7 @@ async function checkStatus() {
       try {
         const newData = JSON.parse(document.getElementById("dataInput").value);
         players = newData;
-        status.innerText =
-          "✅ Данные обновлены (но сохранятся только в этой сессии).";
+        status.innerText = "✅ Данные обновлены (но сохранятся только в этой сессии).";
       } catch (e) {
         status.innerText = "❌ Ошибка в JSON формате.";
       }
